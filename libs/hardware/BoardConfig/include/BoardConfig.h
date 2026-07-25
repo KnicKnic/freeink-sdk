@@ -753,7 +753,11 @@ constexpr BoardProfile XTEINK_X3 = {
     NO_SDMMC,
     {20, 0, 400000, 0x55, 0},  // BQ27220 fuel gauge (0x55) on SDA20/SCL0; no charger IC
     NO_MIC,
-    {20, 0, 400000, 0x68, 0, 0x6B, 0, RtcType::Ds3231, ImuType::Qmi8658}};
+    {20, 0, 400000, 0x68, 0, 0x6B, 0, RtcType::Ds3231, ImuType::Qmi8658},
+    1.0f,
+    // X3 battery latch MOSFET. Hold HIGH while running/light-sleeping; driving it
+    // LOW is a software power-off, matching the CrossPoint hardware test path.
+    {13}};
 
 // --- Xteink X3 (UC8279d run) — ESP32-C3, UC8279d (792x528) -------------------
 // Newer X3 production units swap the UC8253 for a UC8279d ("d_B" silicon; the
@@ -1320,6 +1324,22 @@ inline void holdPowerRails() {
     gpio_hold_dis(static_cast<gpio_num_t>(pin));
     pinMode(pin, OUTPUT);
     digitalWrite(pin, HIGH);
+  }
+}
+
+// Auto light sleep may power down the GPIO/IOMUX domain. Hold the board's
+// keep-alive latch pads HIGH so battery-latched boards do not turn off during
+// tickless idle. The explicit deep-sleep path disables this hold before driving
+// the same latch pins LOW for software power-off.
+inline void holdPowerRailsForLightSleep() {
+  for (const int8_t pin : {ACTIVE.power.latch0, ACTIVE.power.latch1}) {
+    if (pin >= 0) {
+      const auto gpio = static_cast<gpio_num_t>(pin);
+      gpio_hold_dis(gpio);
+      pinMode(pin, OUTPUT);
+      digitalWrite(pin, HIGH);
+      gpio_hold_en(gpio);
+    }
   }
 }
 
