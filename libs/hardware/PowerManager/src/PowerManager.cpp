@@ -82,6 +82,9 @@ void PowerManager::powerDownRailsForSleep() {
 }
 
 void PowerManager::deepSleep() {
+  const auto& b = BoardConfig::ACTIVE;
+  holdRailOff(b.power.latch0, LOW);
+  holdRailOff(b.power.latch1, LOW);
   esp_sleep_config_gpio_isolate();
   gpio_deep_sleep_hold_en();
   esp_deep_sleep_start();
