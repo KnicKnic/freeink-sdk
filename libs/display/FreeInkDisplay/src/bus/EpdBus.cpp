@@ -18,13 +18,17 @@ namespace freeink {
 // a time, so a single instance is safe. DRAM_ATTR keeps it out of flash for the
 // IRAM_ATTR ISR. Ported from the CrossPoint community-sdk EInkDisplay.
 static DRAM_ATTR SemaphoreHandle_t s_epdRefreshDone = nullptr;
+static volatile uint32_t s_epdBusyInterruptCount = 0;
 
 static void IRAM_ATTR epdBusyIsr() {
+  ++s_epdBusyInterruptCount;
   if (!s_epdRefreshDone) return;
   BaseType_t woken = pdFALSE;
   xSemaphoreGiveFromISR(s_epdRefreshDone, &woken);
   if (woken) portYIELD_FROM_ISR();
 }
+
+uint32_t epdBusyInterruptCount() { return s_epdBusyInterruptCount; }
 
 namespace {
 

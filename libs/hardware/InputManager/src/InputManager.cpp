@@ -171,6 +171,7 @@ void InputManager::beginAsync(const uint8_t taskPriority, const uint32_t pollMs,
   if (!_asyncQueue)
     return;
   _asyncTapQueue = xQueueCreate(queueLen, sizeof(float) * 2);
+  _asyncHomeQueue = xQueueCreate(queueLen, sizeof(uint8_t));
   _asyncSwipeQueue = xQueueCreate(queueLen, sizeof(float) * 4);
   xTaskCreate(asyncTaskTrampoline, "fi_input", 4096, this, taskPriority,
               &_asyncTask);
@@ -192,6 +193,10 @@ void InputManager::asyncPoll() {
     float tap[2];
     if (_asyncTapQueue && wasTouchTap(tap[0], tap[1])) {
       xQueueSend(_asyncTapQueue, tap, 0);
+    }
+    if (_asyncHomeQueue && wasHomeKeyTapped()) {
+      const uint8_t homeTap = 1;
+      xQueueSend(_asyncHomeQueue, &homeTap, 0);
     }
     float swipe[4];
     if (_asyncSwipeQueue && wasSwipe(swipe[0], swipe[1], swipe[2], swipe[3])) {
@@ -216,6 +221,13 @@ bool InputManager::popTouchTap(float &nx, float &ny) {
   nx = tap[0];
   ny = tap[1];
   return true;
+}
+
+bool InputManager::popHomeKeyTap() {
+  if (!_asyncHomeQueue)
+    return false;
+  uint8_t homeTap = 0;
+  return xQueueReceive(_asyncHomeQueue, &homeTap, 0) == pdTRUE;
 }
 
 bool InputManager::popSwipe(float &nxStart, float &nyStart, float &nxEnd,

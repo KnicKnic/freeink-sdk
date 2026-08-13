@@ -169,6 +169,11 @@ public:
   // drain and route them afterwards. Returns false when no tap is pending.
   bool popTouchTap(float &nx, float &ny);
 
+  // Pop a completed short press of a capacitive Home key (GT911 boards only).
+  // This is queued alongside buttons/taps when async polling is enabled so a
+  // Home tap that occurs during an e-paper refresh is not lost.
+  bool popHomeKeyTap();
+
   // Pop the next latched swipe gesture (normalized 0..1 panel-native start/end
   // coordinates, same frame as wasSwipe). Like taps, async polling queues
   // swipes so gestures that complete during e-paper refreshes are not lost.
@@ -198,9 +203,10 @@ private:
 
   QueueHandle_t _asyncQueue = nullptr;
   QueueHandle_t _asyncTapQueue = nullptr;
+  QueueHandle_t _asyncHomeQueue = nullptr;
   QueueHandle_t _asyncSwipeQueue = nullptr;
   TaskHandle_t _asyncTask = nullptr;
-  uint32_t _asyncPollMs = 15;
+  uint32_t _asyncPollMs = 150;
   static void asyncTaskTrampoline(void *self);
   void asyncPoll();
 

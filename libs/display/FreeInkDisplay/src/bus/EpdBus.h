@@ -13,6 +13,10 @@
 
 namespace freeink {
 
+// Diagnostic count of BUSY-line GPIO ISR invocations. This is a cumulative
+// counter and is intended to be sampled periodically by the application.
+uint32_t epdBusyInterruptCount();
+
 // BUSY line conventions differ by controller family.
 enum class BusyPolarity : uint8_t {
   ActiveHigh,  // SSD1677 (X4 / de-link): busy while HIGH
